@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VocaLearn AI — Speak Your Way to Fluency</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "bg-deep": "#020203",
+          "bg-base": "#050506",
+          "bg-elevated": "#0a0a0c",
+          "surface": "rgba(255,255,255,0.05)",
+          "foreground": "#EDEDEF",
+          "muted": "#9BA1AC",
+          "accent": "#5E6AD2",
+          "accent-bright": "#8B95F6",
+          "accent-soft": "#AEB6FF",
+          "teal": "#2DD4BF",
+          "teal-soft": "#7DEEE0",
+          "amber": "#FBBF24",
+          "amber-soft": "#FDE68A",
+          "danger": "#F87171",
+        },
+        fontFamily: {
+          heading: ["Space Grotesk", "sans-serif"],
+          body: ["DM Sans", "sans-serif"],
+        },
+        borderRadius: {
+          card: "16px",
+        },
+        transitionTimingFunction: {
+          "out-expo": "cubic-bezier(0.16, 1, 0.3, 1)",
+        },
+      },
+    },
+  };
+</script>
+<style>
+  body {
+    background: linear-gradient(180deg, #0a0a0f 0%, #020203 100%);
+    min-height: 100dvh;
+  }
+  .glass {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .glass-strong {
+    background: rgba(12, 12, 18, 0.78);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .card-hover {
+    transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 250ms ease, background 250ms ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-3px);
+    border-color: rgba(139, 149, 246, 0.35);
+    background: rgba(255, 255, 255, 0.06);
+  }
+  /* Ambient blobs */
+  .blob {
+    position: fixed;
+    border-radius: 9999px;
+    filter: blur(70px);
+    opacity: 0.12;
+    pointer-events: none;
+    z-index: 0;
+    will-change: transform;
+  }
+  .blob-1 { animation: drift1 26s ease-in-out infinite alternate; }
+  .blob-2 { animation: drift2 32s ease-in-out infinite alternate; }
+  @keyframes drift1 {
+    from { transform: translate(0, 0) scale(1); }
+    to   { transform: translate(90px, 60px) scale(1.15); }
+  }
+  @keyframes drift2 {
+    from { transform: translate(0, 0) scale(1.1); }
+    to   { transform: translate(-80px, -50px) scale(0.95); }
+  }
+  /* Mic glow */
+  .mic-glow { animation: micPulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+  @keyframes micPulse {
+    0%, 100% { box-shadow: 0 0 24px 2px rgba(94, 106, 210, 0.25); }
+    50%      { box-shadow: 0 0 56px 14px rgba(94, 106, 210, 0.45); }
+  }
+  .recording-ring { animation: ringExpand 1.6s ease-out infinite; }
+  @keyframes ringExpand {
+    0%   { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(1.9); opacity: 0; }
+  }
+  /* Waveform */
+  .wave-bar { animation: wave 1.1s ease-in-out infinite; border-radius: 99px; }
+  @keyframes wave {
+    0%, 100% { height: 10px; }
+    50%      { height: 36px; }
+  }
+  /* Entrances */
+  .fade-up { animation: fadeUp 500ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  /* Skeleton shimmer */
+  .shimmer {
+    background: linear-gradient(100deg, rgba(255,255,255,0.04) 40%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.04) 60%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+  @keyframes shimmer {
+    from { background-position: 200% 0; }
+    to   { background-position: -200% 0; }
+  }
+  .spin { animation: spin 0.9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  /* Focus visibility */
+  :focus-visible {
+    outline: 2px solid #8B95F6;
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+  select option { background-color: #0a0a0c; color: #EDEDEF; }
+  button { cursor: pointer; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 99px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+</head>
+<body class="font-body text-foreground antialiased selection:bg-accent selection:text-white overflow-x-hidden">
+
+<!-- Ambient light blobs -->
+<div class="blob blob-1 w-[420px] h-[420px] bg-accent top-[-120px] left-[-80px]"></div>
+<div class="blob blob-2 w-[360px] h-[360px] bg-teal bottom-[-140px] right-[-100px]"></div>
+
+<!-- ============ HEADER ============ -->
+<header class="sticky top-0 z-40 glass-strong border-x-0 border-t-0">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8 py-3.5 flex items-center justify-between gap-4">
+    <a href="#" class="flex items-center gap-2.5 group" aria-label="VocaLearn AI home">
+      <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-accent to-[#7C4DFF] flex items-center justify-center shadow-lg shadow-accent/30">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+      </span>
+      <span class="font-heading font-700 text-lg tracking-tight">
+        VocaLearn<span class="text-accent-bright font-bold"> AI</span>
+      </span>
+    </a>
+    <div class="flex items-center gap-2">
+      <span id="backend-status" class="hidden sm:flex items-center gap-1.5 text-xs text-muted font-medium px-3 py-1.5 rounded-full glass">
+        <span id="status-dot" class="w-1.5 h-1.5 rounded-full bg-muted"></span>
+        <span id="status-text">Connecting…</span>
+      </span>
+    </div>
+  </div>
+</header>
+
+<main class="relative z-10 max-w-6xl mx-auto px-5 sm:px-8 pb-24">
+
+  <!-- ============ HERO / CAPTURE ============ -->
+  <section id="hero" class="pt-12 sm:pt-16 text-center fade-up">
+    <p class="font-heading text-xs font-medium uppercase tracking-[0.25em] text-accent-soft mb-5">
+      Speak up &amp; learn fluently
+    </p>
+    <h1 class="font-heading font-bold text-4xl sm:text-5xl lg:text-6xl leading-[1.08] tracking-tight mb-5">
+      Speak Your Way<br class="hidden sm:block"/>
+      to <span class="bg-gradient-to-r from-accent-bright via-[#A78BFA] to-teal bg-clip-text text-transparent">Fluency.</span>
+    </h1>
+    <p class="text-muted text-base sm:text-lg max-w-xl mx-auto mb-10 leading-relaxed">
+      Say any topic — VocaLearn instantly builds a personalized lesson with
+      vocabulary, expressions, real dialogue and pronunciation audio.
+    </p>
+
+    <!-- Settings bar -->
+    <div class="glass rounded-2xl max-w-3xl mx-auto p-4 sm:p-5 mb-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-left">
+      <div>
+        <label for="language" class="block text-[11px] font-heading font-medium uppercase tracking-widest text-muted mb-1.5">
+          I want to learn
+        </label>
+        <select id="language" class="w-full rounded-xl bg-bg-elevated border border-white/10 text-sm text-foreground py-2.5 px-3 focus:border-accent-bright focus:ring-0 transition-colors">
+          <option value="english" selected>English</option>
+          <option value="arabic">Arabic</option>
+          <option value="french">French</option>
+          <option value="spanish">Spanish</option>
+          <option value="german">German</option>
+        </select>
+      </div>
+      <div>
+        <label for="native-language" class="block text-[11px] font-heading font-medium uppercase tracking-widest text-muted mb-1.5">
+          I speak
+        </label>
+        <select id="native-language" class="w-full rounded-xl bg-bg-elevated border border-white/10 text-sm text-foreground py-2.5 px-3 focus:border-accent-bright focus:ring-0 transition-colors">
+          <option value="arabic" selected>Arabic</option>
+          <option value="english">English</option>
+          <option value="french">French</option>
+          <option value="spanish">Spanish</option>
+          <option value="german">German</option>
+        </select>
+      </div>
+      <div>
+        <label for="level" class="block text-[11px] font-heading font-medium uppercase tracking-widest text-muted mb-1.5">
+          Level
+        </label>
+        <select id="level" class="w-full rounded-xl bg-bg-elevated border border-white/10 text-sm text-foreground py-2.5 px-3 focus:border-accent-bright focus:ring-0 transition-colors">
+          <option value="beginner" selected>Beginner</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
+      </div>
+      <div>
+        <label for="voice" class="block text-[11px] font-heading font-medium uppercase tracking-widest text-muted mb-1.5">
+          Lesson voice
+        </label>
+        <select id="voice" class="w-full rounded-xl bg-bg-elevated border border-white/10 text-sm text-foreground py-2.5 px-3 focus:border-accent-bright focus:ring-0 transition-colors">
+          <option value="">Loading voices…</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Mic / capture zone -->
+    <div id="capture-idle" class="flex flex-col items-center gap-7">
+      <button id="mic-btn" aria-label="Start recording your topic"
+        class="group relative w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-accent to-[#7C4DFF] mic-glow flex items-center justify-center transition-transform duration-200 ease-out-expo hover:scale-105 active:scale-95">
+        <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+      </button>
+      <span class="font-heading text-xs font-medium uppercase tracking-[0.2em] text-muted">
+        Tap to speak your topic
+      </span>
+
+      <!-- Typed alternative -->
+      <div class="w-full max-w-md flex items-center gap-2">
+        <div class="relative flex-1">
+          <input id="topic-input" type="text" placeholder="…or type a topic, e.g. ordering coffee"
+            aria-label="Type a lesson topic"
+            class="w-full rounded-xl bg-bg-elevated border border-white/10 text-sm text-foreground placeholder:text-muted/60 py-3 px-4 focus:border-accent-bright focus:ring-0 transition-colors"/>
+        </div>
+        <button id="topic-go" aria-label="Generate lesson from typed topic"
+          class="shrink-0 rounded-xl bg-accent hover:bg-accent-bright text-white font-heading font-medium text-sm px-5 py-3 transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed">
+          Create
+        </button>
+      </div>
+
+      <!-- Suggestions -->
+      <div class="flex flex-col items-center gap-3">
+        <span class="text-xs text-muted">Try saying:</span>
+        <div class="flex flex-wrap items-center justify-center gap-2">
+          <button data-suggest="Restaurant phrases" class="suggestion px-4 py-2 rounded-xl glass text-accent-soft text-xs font-heading font-medium tracking-wide transition-all duration-200 hover:bg-white/10 hover:border-accent/40">"Restaurant phrases"</button>
+          <button data-suggest="Airport check-in" class="suggestion px-4 py-2 rounded-xl glass text-teal-soft text-xs font-heading font-medium tracking-wide transition-all duration-200 hover:bg-white/10 hover:border-teal/40">"Airport check-in"</button>
+          <button data-suggest="Shopping help" class="suggestion px-4 py-2 rounded-xl glass text-amber-soft text-xs font-heading font-medium tracking-wide transition-all duration-200 hover:bg-white/10 hover:border-amber/40">"Shopping help"</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recording state -->
+    <div id="capture-recording" class="hidden flex-col items-center gap-7">
+      <div class="relative w-28 h-28 sm:w-32 sm:h-32">
+        <span class="recording-ring absolute inset-0 rounded-full border-2 border-danger/60" aria-hidden="true"></span>
+        <button id="stop-btn" aria-label="Stop recording"
+          class="relative w-full h-full rounded-full bg-gradient-to-br from-danger to-[#DC2626] flex items-center justify-center shadow-2xl shadow-danger/30 transition-transform duration-200 hover:scale-105 active:scale-95">
+          <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
+        </button>
+      </div>
+      <div class="flex items-end justify-center gap-1 h-10" aria-hidden="true">
+        <div class="wave-bar w-1.5 bg-danger/80" style="animation-delay:0s"></div>
+        <div class="wave-bar w-1.5 bg-danger/80" style="animation-delay:.15s"></div>
+        <div class="wave-bar w-1.5 bg-danger/80" style="animation-delay:.3s"></div>
+        <div class="wave-bar w-1.5 bg-danger/80" style="animation-delay:.45s"></div>
+        <div class="wave-bar w-1.5 bg-danger/80" style="animation-delay:.6s"></div>
+        <div class="wave-bar w-1.5 bg-danger/80" style="animation-delay:.75s"></div>
+        <div class="wave-bar w-1.5 bg-danger/80" style="animation-delay:.9s"></div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="font-heading text-sm text-foreground tabular-nums" id="rec-timer">0:00</span>
+        <span class="text-xs text-muted uppercase tracking-widest">Listening… tap to finish</span>
+      </div>
+      <button id="cancel-rec" class="text-xs text-muted hover:text-foreground transition-colors underline underline-offset-4">Cancel</button>
+    </div>
+
+    <!-- Transcribing state -->
+    <div id="capture-transcribing" class="hidden flex-col items-center gap-5">
+      <div class="w-16 h-16 rounded-full glass flex items-center justify-center">
+        <svg class="spin" xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8B95F6" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+      </div>
+      <span class="text-sm text-muted">Transcribing your voice…</span>
+    </div>
+  </section>
+
+  <!-- ============ LESSON LOADING (skeleton) ============ -->
+  <section id="lesson-loading" class="hidden pt-14 fade-up" aria-live="polite">
+    <div class="text-center mb-10">
+      <div class="inline-flex items-center gap-3 glass rounded-full px-5 py-2.5">
+        <svg class="spin" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B95F6" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+        <span id="loading-msg" class="text-sm text-foreground">Crafting your lesson…</span>
+      </div>
+      <p class="text-xs text-muted mt-3">Local AI is thinking — this can take a few minutes on first run.</p>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="shimmer rounded-card h-36"></div>
+      <div class="shimmer rounded-card h-36"></div>
+      <div class="shimmer rounded-card h-36 hidden lg:block"></div>
+      <div class="shimmer rounded-card h-36"></div>
+      <div class="shimmer rounded-card h-36"></div>
+      <div class="shimmer rounded-card h-36 hidden lg:block"></div>
+    </div>
+  </section>
+
+  <!-- ============ LESSON VIEW ============ -->
+  <section id="lesson" class="hidden pt-12"></section>
+
+</main>
+
+<!-- Toast -->
+<div id="toast-wrap" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 items-center w-full max-w-md px-4" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+/* ============ CONFIG ============ */
+// Same-origin when served by FastAPI (/app); falls back to localhost for file:// usage.
+const API = (location.protocol === "file:") ? "http://localhost:8000" : "";
+
+/* ============ DOM ============ */
+const $ = (id) => document.getElementById(id);
+const els = {
+  hero: $("hero"),
+  idle: $("capture-idle"),
+  recording: $("capture-recording"),
+  transcribing: $("capture-transcribing"),
+  loading: $("lesson-loading"),
+  loadingMsg: $("loading-msg"),
+  lesson: $("lesson"),
+  micBtn: $("mic-btn"),
+  stopBtn: $("stop-btn"),
+  cancelRec: $("cancel-rec"),
+  recTimer: $("rec-timer"),
+  topicInput: $("topic-input"),
+  topicGo: $("topic-go"),
+  language: $("language"),
+  nativeLanguage: $("native-language"),
+  level: $("level"),
+  voice: $("voice"),
+  statusDot: $("status-dot"),
+  statusText: $("status-text"),
+  toastWrap: $("toast-wrap"),
+};
+
+/* ============ ICONS (Lucide, inline SVG) ============ */
+const icon = {
+  play: '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>',
+  spinner: '<svg class="spin" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>',
+  stop: '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>',
+  book: '<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>',
+  quote: '<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 6.1H3M21 12.1H3M15.1 18H3"/></svg>',
+  chat: '<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>',
+  bulb: '<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>',
+  mic: '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>',
+  refresh: '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>',
+  alert: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>',
+  check: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>',
+};
+
+/* ============ HELPERS ============ */
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function toast(message, type = "error") {
+  const t = document.createElement("div");
+  const color = type === "error" ? "text-danger border-danger/30" : "text-teal border-teal/30";
+  t.className = `glass-strong ${color} rounded-xl px-4 py-3 text-sm flex items-center gap-2.5 shadow-2xl fade-up max-w-full`;
+  t.innerHTML = `${type === "error" ? icon.alert : icon.check}<span class="text-foreground">${esc(message)}</span>`;
+  els.toastWrap.appendChild(t);
+  setTimeout(() => {
+    t.style.transition = "opacity 300ms ease";
+    t.style.opacity = "0";
+    setTimeout(() => t.remove(), 320);
+  }, 4500);
+}
+
+function show(el) { el.classList.remove("hidden"); }
+function hide(el) { el.classList.add("hidden"); }
+function setCaptureState(state) {
+  [els.idle, els.recording, els.transcribing].forEach(hide);
+  [els.idle, els.recording, els.transcribing].forEach(e => e.classList.remove("flex"));
+  const target = { idle: els.idle, recording: els.recording, transcribing: els.transcribing }[state];
+  target.classList.add("flex");
+  show(target);
+}
+
+/* ============ BACKEND STATUS + VOICES ============ */
+async function init() {
+  try {
+    const res = await fetch(`${API}/voices`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    els.voice.innerHTML = data.voices
+      .map(v => `<option value="${esc(v.id)}">${esc(v.name)}</option>`)
+      .join("");
+    els.statusDot.className = "w-1.5 h-1.5 rounded-full bg-teal";
+    els.statusText.textContent = "Backend online";
+    matchVoiceToLanguage();
+  } catch {
+    els.voice.innerHTML = `<option value="">Voices unavailable</option>`;
+    els.statusDot.className = "w-1.5 h-1.5 rounded-full bg-danger";
+    els.statusText.textContent = "Backend offline";
+    toast("Cannot reach the backend. Start it with: uvicorn v1:app --reload", "error");
+  }
+}
+init();
+
+// Prefer a voice whose name mentions the selected learning language
+function matchVoiceToLanguage() {
+  const lang = els.language.value.toLowerCase();
+  const match = [...els.voice.options].find(o => o.textContent.toLowerCase().includes(lang));
+  if (match) els.voice.value = match.value;
+}
+els.language.addEventListener("change", matchVoiceToLanguage);
+
+/* ============ RECORDING (MediaRecorder → /stt) ============ */
+let mediaRecorder = null;
+let chunks = [];
+let recCancelled = false;
+let timerInterval = null;
+let answerTarget = null; // null = topic capture, otherwise practice-answer callback
+
+function fmtTime(s) { return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }
+
+async function startRecording(onTranscript) {
+  answerTarget = onTranscript || null;
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch {
+    toast("Microphone access denied. Allow the mic or type your topic instead.");
+    return;
+  }
+  chunks = [];
+  recCancelled = false;
+  const mime = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "";
+  mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+  mediaRecorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+  mediaRecorder.onstop = async () => {
+    stream.getTracks().forEach(t => t.stop());
+    clearInterval(timerInterval);
+    if (recCancelled) { setCaptureState("idle"); return; }
+    const blob = new Blob(chunks, { type: mime || "audio/webm" });
+    await transcribe(blob);
+  };
+  mediaRecorder.start();
+
+  setCaptureState("recording");
+  let secs = 0;
+  els.recTimer.textContent = "0:00";
+  timerInterval = setInterval(() => {
+    secs += 1;
+    els.recTimer.textContent = fmtTime(secs);
+    if (secs >= 30) mediaRecorder.stop(); // hard cap
+  }, 1000);
+}
+
+async function transcribe(blob) {
+  setCaptureState("transcribing");
+  const form = new FormData();
+  form.append("file", blob, "recording.webm");
+  try {
+    const res = await fetch(`${API}/stt`, { method: "POST", body: form });
+    const data = await res.json();
+    const text = data.text || data.transcription || data.transcript || "";
+    if (!res.ok || !text) throw new Error(data.detail || "No transcription returned");
+    setCaptureState("idle");
+    if (answerTarget) {
+      answerTarget(text);
+    } else {
+      els.topicInput.value = text;
+      toast(`Heard: "${text}"`, "success");
+      generateLesson(text);
+    }
+  } catch (err) {
+    setCaptureState("idle");
+    if (answerTarget) answerTarget(null);
+    toast(`Transcription failed — ${err.message}. You can type the topic instead.`);
+  }
+}
+
+els.micBtn.addEventListener("click", () => startRecording(null));
+els.stopBtn.addEventListener("click", () => mediaRecorder?.state === "recording" && mediaRecorder.stop());
+els.cancelRec.addEventListener("click", () => {
+  recCancelled = true;
+  if (mediaRecorder?.state === "recording") mediaRecorder.stop();
+});
+
+/* ============ LESSON GENERATION ============ */
+const loadingMessages = [
+  "Crafting your lesson…",
+  "Picking the 20% of words that matter most…",
+  "Writing a realistic dialogue…",
+  "Polishing examples and expressions…",
+  "Almost there…",
+];
+let loadingTicker = null;
+let currentLesson = null;
+
+async function generateLesson(topic) {
+  topic = (topic || "").trim();
+  if (!topic) { toast("Please say or type a topic first."); return; }
+
+  hide(els.lesson);
+  show(els.loading);
+  els.loading.scrollIntoView({ behavior: "smooth", block: "start" });
+  let i = 0;
+  els.loadingMsg.textContent = loadingMessages[0];
+  clearInterval(loadingTicker);
+  loadingTicker = setInterval(() => {
+    i = (i + 1) % loadingMessages.length;
+    els.loadingMsg.textContent = loadingMessages[i];
+  }, 7000);
+
+  try {
+    const res = await fetch(`${API}/lesson`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        topic,
+        language: els.language.value,
+        native_language: els.nativeLanguage.value,
+        level: els.level.value,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || `Server error ${res.status}`);
+    currentLesson = data;
+    renderLesson(data);
+  } catch (err) {
+    toast(`Lesson generation failed — ${err.message}`);
+  } finally {
+    clearInterval(loadingTicker);
+    hide(els.loading);
+  }
+}
+
+els.topicGo.addEventListener("click", () => generateLesson(els.topicInput.value));
+els.topicInput.addEventListener("keydown", (e) => { if (e.key === "Enter") generateLesson(els.topicInput.value); });
+document.querySelectorAll(".suggestion").forEach(btn =>
+  btn.addEventListener("click", () => {
+    els.topicInput.value = btn.dataset.suggest;
+    generateLesson(btn.dataset.suggest);
+  })
+);
+
+/* ============ TTS (/tts → audio) ============ */
+const audioCache = new Map();
+let currentAudio = null;
+let currentTTSBtn = null;
+
+function resetTTSBtn(btn) {
+  if (!btn) return;
+  btn.innerHTML = icon.play;
+  btn.dataset.playing = "";
+}
+
+async function playTTS(text, btn) {
+  // Toggle off if this button is already playing
+  if (btn.dataset.playing === "1") {
+    currentAudio?.pause();
+    resetTTSBtn(btn);
+    return;
+  }
+  const voice = els.voice.value;
+  if (!voice) { toast("No voice available — check the backend."); return; }
+
+  // Stop anything currently playing
+  currentAudio?.pause();
+  resetTTSBtn(currentTTSBtn);
+
+  const key = `${voice}::${text}`;
+  btn.innerHTML = icon.spinner;
+  btn.disabled = true;
+  try {
+    let url = audioCache.get(key);
+    if (!url) {
+      const res = await fetch(`${API}/tts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, voice }),
+      });
+      if (!res.ok) {
+        let detail = `Server error ${res.status}`;
+        try { detail = (await res.json()).detail || detail; } catch {}
+        throw new Error(detail);
+      }
+      const blob = await res.blob();
+      url = URL.createObjectURL(blob);
+      audioCache.set(key, url);
+    }
+    currentAudio = new Audio(url);
+    currentTTSBtn = btn;
+    btn.dataset.playing = "1";
+    btn.innerHTML = icon.stop;
+    currentAudio.onended = () => resetTTSBtn(btn);
+    currentAudio.onerror = () => { resetTTSBtn(btn); toast("Audio playback failed."); };
+    await currentAudio.play();
+  } catch (err) {
+    resetTTSBtn(btn);
+    toast(`Speech failed — ${err.message}`);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function ttsBtn(text, extra = "") {
+  return `<button class="tts shrink-0 w-9 h-9 rounded-full glass flex items-center justify-center text-accent-soft hover:text-white hover:bg-accent/40 hover:border-accent/50 transition-all duration-200 ${extra}"
+    data-text="${esc(text)}" aria-label="Listen to: ${esc(text)}">${icon.play}</button>`;
+}
+
+/* ============ LESSON RENDER ============ */
+function sectionHeader(ic, label, colorClass) {
+  return `
+  <div class="flex items-center gap-2.5 mb-5">
+    <span class="w-8 h-8 rounded-lg glass flex items-center justify-center ${colorClass}">${ic}</span>
+    <h2 class="font-heading font-semibold text-lg tracking-tight">${label}</h2>
+  </div>`;
+}
+
+function renderLesson(lesson) {
+  const words = lesson.words || [];
+  const expressions = lesson.expressions || [];
+  const dialogue = lesson.dialogue || [];
+
+  els.lesson.innerHTML = `
+  <!-- Lesson header -->
+  <div class="fade-up flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10 border-b border-white/5 pb-7">
+    <div>
+      <p class="font-heading text-[11px] font-medium uppercase tracking-[0.25em] text-accent-soft mb-2">Your personalized lesson</p>
+      <h2 class="font-heading font-bold text-2xl sm:text-3xl tracking-tight" dir="auto">${esc(lesson.topic)}</h2>
+      <div class="flex items-center gap-2 mt-3">
+        <span class="px-3 py-1 rounded-full glass text-xs text-accent-soft capitalize">${esc(lesson.language)}</span>
+        <span class="px-3 py-1 rounded-full glass text-xs text-amber-soft capitalize">Explained in ${esc(lesson.native_language || els.nativeLanguage.value)}</span>
+        <span class="px-3 py-1 rounded-full glass text-xs text-teal-soft capitalize">${esc(lesson.level)}</span>
+        <span class="px-3 py-1 rounded-full glass text-xs text-muted">${words.length} words · ${expressions.length} expressions</span>
+      </div>
+    </div>
+    <button id="new-lesson" class="shrink-0 inline-flex items-center gap-2 rounded-xl glass px-4 py-2.5 text-sm font-heading font-medium text-foreground hover:bg-white/10 hover:border-accent/40 transition-all duration-200">
+      ${icon.refresh} New lesson
+    </button>
+  </div>
+
+  <!-- Vocabulary -->
+  <div class="mb-12 fade-up" style="animation-delay:.05s">
+    ${sectionHeader(icon.book, "Key Vocabulary", "text-accent-soft")}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      ${words.map((w, idx) => `
+      <article class="glass card-hover rounded-card p-5 flex flex-col gap-2.5" style="animation-delay:${idx * 40}ms">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <h3 class="font-heading font-semibold text-lg text-foreground leading-snug" dir="auto">${esc(w.word)}</h3>
+            <span class="text-[11px] uppercase tracking-widest text-accent-soft/80">${esc(w.part_of_speech)}</span>
+          </div>
+          ${ttsBtn(w.word)}
+        </div>
+        <p class="text-sm text-muted leading-relaxed" dir="auto">${esc(w.meaning)}</p>
+        <div class="mt-auto pt-2 border-t border-white/5 flex items-center justify-between gap-2">
+          <p class="text-sm text-foreground/85 italic leading-relaxed" dir="auto">"${esc(w.example)}"</p>
+          ${ttsBtn(w.example, "w-8 h-8")}
+        </div>
+      </article>`).join("")}
+    </div>
+  </div>
+
+  <!-- Expressions -->
+  <div class="mb-12 fade-up" style="animation-delay:.1s">
+    ${sectionHeader(icon.quote, "Essential Expressions", "text-teal-soft")}
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      ${expressions.map(e => `
+      <article class="glass card-hover rounded-card p-5 flex items-start gap-4">
+        <div class="flex-1 min-w-0">
+          <h3 class="font-heading font-semibold text-base text-foreground leading-snug mb-1.5" dir="auto">${esc(e.expression)}</h3>
+          <p class="text-sm text-muted leading-relaxed" dir="auto">${esc(e.usage)}</p>
+        </div>
+        ${ttsBtn(e.expression)}
+      </article>`).join("")}
+    </div>
+  </div>
+
+  <!-- Dialogue -->
+  <div class="mb-12 fade-up" style="animation-delay:.15s">
+    ${sectionHeader(icon.chat, "Real Conversation", "text-amber-soft")}
+    <div class="glass rounded-card p-5 sm:p-7 flex flex-col gap-4 max-w-3xl">
+      ${dialogue.map(d => {
+        const isA = String(d.speaker).toUpperCase() === "A";
+        return `
+        <div class="flex items-end gap-3 ${isA ? "" : "flex-row-reverse"}">
+          <span class="shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-heading font-semibold text-xs ${isA ? "bg-accent/30 text-accent-soft" : "bg-teal/20 text-teal-soft"}">${esc(d.speaker)}</span>
+          <div class="max-w-[80%] rounded-2xl px-4 py-3 ${isA ? "bg-white/[0.05] rounded-bl-sm" : "bg-accent/15 rounded-br-sm"}">
+            <p class="text-sm text-foreground leading-relaxed" dir="auto">${esc(d.text)}</p>
+          </div>
+          ${ttsBtn(d.text, "w-8 h-8")}
+        </div>`;
+      }).join("")}
+    </div>
+  </div>
+
+  <!-- Practice question -->
+  <div class="fade-up" style="animation-delay:.2s">
+    ${sectionHeader(icon.bulb, "Practice Time", "text-amber-soft")}
+    <div class="relative overflow-hidden rounded-card border border-accent/25 bg-gradient-to-br from-accent/15 via-transparent to-teal/10 p-6 sm:p-8 max-w-3xl">
+      <div class="absolute -top-16 -right-16 w-48 h-48 bg-accent/20 blur-[60px] rounded-full pointer-events-none"></div>
+      <div class="relative flex items-start gap-4 flex-wrap">
+        <div class="flex-1 min-w-[220px]">
+          <p class="text-base sm:text-lg text-foreground leading-relaxed font-medium" dir="auto">${esc(lesson.question)}</p>
+          <p class="text-xs text-muted mt-2">Answer out loud using today's vocabulary.</p>
+        </div>
+        <div class="flex items-center gap-2.5">
+          ${ttsBtn(lesson.question)}
+          <button id="answer-mic" class="inline-flex items-center gap-2 rounded-xl bg-accent hover:bg-accent-bright text-white font-heading font-medium text-sm px-4 py-2.5 transition-colors duration-200">
+            ${icon.mic} Answer by voice
+          </button>
+        </div>
+      </div>
+      <div id="answer-result" class="relative hidden mt-5 rounded-xl glass p-4">
+        <p class="text-[11px] uppercase tracking-widest text-teal-soft mb-1.5">You said</p>
+        <p id="answer-text" class="text-sm text-foreground leading-relaxed" dir="auto"></p>
+      </div>
+    </div>
+  </div>`;
+
+  hide(els.loading);
+  show(els.lesson);
+  els.lesson.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  // Wire TTS buttons
+  els.lesson.querySelectorAll(".tts").forEach(btn =>
+    btn.addEventListener("click", () => playTTS(btn.dataset.text, btn))
+  );
+
+  // New lesson
+  $("new-lesson").addEventListener("click", () => {
+    hide(els.lesson);
+    els.topicInput.value = "";
+    els.hero.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  // Voice answer
+  const answerMic = $("answer-mic");
+  answerMic.addEventListener("click", () => {
+    els.hero.scrollIntoView({ behavior: "smooth", block: "center" });
+    answerMic.disabled = true;
+    answerMic.classList.add("opacity-50");
+    startRecording((text) => {
+      answerMic.disabled = false;
+      answerMic.classList.remove("opacity-50");
+      if (text) {
+        $("answer-text").textContent = text;
+        show($("answer-result"));
+        $("answer-result").scrollIntoView({ behavior: "smooth", block: "center" });
+        toast("Answer transcribed!", "success");
+      }
+    });
+  });
+}
+</script>
+</body>
+</html>

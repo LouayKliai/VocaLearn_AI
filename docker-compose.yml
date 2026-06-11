@@ -1,0 +1,34 @@
+version: "3.8"
+
+services:
+
+  # ========================================
+  # Local LLM (lesson generation)
+  # ========================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: vocalearn-ollama
+    # Start the server, then make sure the model is present (no-op if cached)
+    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 5 && ollama pull ${OLLAMA_MODEL:-gemma3:4b}; wait"]
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+  # ========================================
+  # FastAPI backend + web app
+  # ========================================
+  api:
+    build: .
+    container_name: vocalearn-api
+    ports:
+      - "8000:8000"
+    environment:
+      - HAKIM_API_KEY=${HAKIM_API_KEY}
+      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-gemma3:4b}
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
