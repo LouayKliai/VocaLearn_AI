@@ -213,8 +213,8 @@ AI_Assisstant/
 
 ## 👤 Author
 
-**Mohamed Salem Khyarhoum**
-📧 [mohamedsalemkhyarhoum@gmail.com](mailto:mohamedsalemkhyarhoum@gmail.com)
+**Louay Kliai**
+📧 [kliailouay@gmail.com](mailto:kliailouay@gmail.com)
 
 *Built as part of an AI engineering course project — combining STT, local LLMs and TTS into a complete voice-first product.*
 
