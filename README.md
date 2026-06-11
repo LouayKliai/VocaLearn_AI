@@ -91,7 +91,7 @@ flowchart LR
 The whole stack (FastAPI app + Ollama LLM) runs with one command:
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/LouayKliai/VocaLearn_AI
 cd VocaLearn/AI_Assisstant
 
 # Add your Hakim AI key
